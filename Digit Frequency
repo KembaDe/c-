@@ -1,0 +1,26 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+int main() {
+    char s[1001];
+    int freq[10] = {0}; // Initialize counts for digits 0-9 to zero
+
+    // Read the input string
+    scanf("%s", s);
+
+    // Iterate through the string
+    for (int i = 0; s[i] != '\0'; i++) {
+        // Check if the character is a digit
+        if (s[i] >= '0' && s[i] <= '9') {
+            freq[s[i] - '0']++; // Increment count at the index corresponding to the digit
+        }
+    }
+
+    // Print the frequencies separated by spaces
+    for (int i = 0; i < 10; i++) {
+        printf("%d ", freq[i]);
+    }
+
+    return 0;
+}
