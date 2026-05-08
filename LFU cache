@@ -1,0 +1,100 @@
+#include <stdlib.h>
+#include <string.h>
+
+// Node representing a cache entry
+typedef struct Node {
+    int key, val, freq;
+    struct Node *prev, *next;
+} Node;
+
+// List representing a group of nodes with the same frequency
+typedef struct List {
+    Node *head, *tail;
+} List;
+
+typedef struct {
+    int capacity, size, min_freq;
+    Node **hash_table;     // key -> Node pointer
+    List *freq_map;       // frequency -> Doubly Linked List
+} LFUCache;
+
+// Helper to remove a node from its current frequency list
+void removeNode(List *list, Node *node) {
+    if (node->prev) node->prev->next = node->next;
+    else list->head = node->next;
+    if (node->next) node->next->prev = node->prev;
+    else list->tail = node->prev;
+}
+
+// Helper to add a node to the head of a frequency list
+void addNode(List *list, Node *node) {
+    node->next = list->head;
+    node->prev = NULL;
+    if (list->head) list->head->prev = node;
+    list->head = node;
+    if (!list->tail) list->tail = node;
+}
+
+LFUCache* lFUCacheCreate(int capacity) {
+    LFUCache *obj = malloc(sizeof(LFUCache));
+    obj->capacity = capacity;
+    obj->size = 0;
+    obj->min_freq = 0;
+    // Simple fixed-size hash table for this problem's constraints
+    obj->hash_table = calloc(100001, sizeof(Node*));
+    obj->freq_map = calloc(200001, sizeof(List)); 
+    return obj;
+}
+
+int lFUCacheGet(LFUCache* obj, int key) {
+    if (obj->capacity == 0 || !obj->hash_table[key]) return -1;
+    
+    Node *node = obj->hash_table[key];
+    int val = node->val;
+    
+    // Update frequency: Move from freq_map[f] to freq_map[f+1]
+    removeNode(&obj->freq_map[node->freq], node);
+    if (node->freq == obj->min_freq && !obj->freq_map[node->freq].head) {
+        obj->min_freq++;
+    }
+    node->freq++;
+    addNode(&obj->freq_map[node->freq], node);
+    
+    return val;
+}
+
+void lFUCachePut(LFUCache* obj, int key, int value) {
+    if (obj->capacity <= 0) return;
+    
+    if (obj->hash_table[key]) {
+        obj->hash_table[key]->val = value;
+        lFUCacheGet(obj, key); // Reuse update logic
+        return;
+    }
+    
+    if (obj->size == obj->capacity) {
+        // Evict LRU from min_freq list
+        Node *to_evict = obj->freq_map[obj->min_freq].tail;
+        obj->hash_table[to_evict->key] = NULL;
+        removeNode(&obj->freq_map[obj->min_freq], to_evict);
+        free(to_evict);
+        obj->size--;
+    }
+    
+    // Insert new node
+    Node *new_node = malloc(sizeof(Node));
+    new_node->key = key;
+    new_node->val = value;
+    new_node->freq = 1;
+    obj->hash_table[key] = new_node;
+    obj->min_freq = 1;
+    addNode(&obj->freq_map[1], new_node);
+    obj->size++;
+}
+
+void lFUCacheFree(LFUCache* obj) {
+    // In a real scenario, you'd iterate and free all nodes and tables
+    free(obj->hash_table);
+    free(obj->freq_map);
+    free(obj);
+}
