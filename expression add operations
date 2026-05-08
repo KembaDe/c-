@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void backtrack(char* num, int target, int index, long currentVal, long prevOperand, char* path, int pathLen, char*** res, int* resSize) {
+    if (index == strlen(num)) {
+        if (currentVal == target) {
+            (*res)[*resSize] = strdup(path);
+            (*resSize)++;
+        }
+        return;
+    }
+
+    char partStr[12];
+    for (int i = index; i < strlen(num); i++) {
+        // Prevent leading zeros: "05" is invalid, but "0" is fine
+        if (i > index && num[index] == '0') break;
+
+        int len = i - index + 1;
+        strncpy(partStr, num + index, len);
+        partStr[len] = '\0';
+        long val = atol(partStr);
+
+        if (index == 0) {
+            // First number, no operator needed
+            sprintf(path, "%s", partStr);
+            backtrack(num, target, i + 1, val, val, path, len, res, resSize);
+        } else {
+            // Addition
+            int nextLen = sprintf(path + pathLen, "+%s", partStr);
+            backtrack(num, target, i + 1, currentVal + val, val, path, pathLen + nextLen, res, resSize);
+            
+            // Subtraction
+            nextLen = sprintf(path + pathLen, "-%s", partStr);
+            backtrack(num, target, i + 1, currentVal - val, -val, path, pathLen + nextLen, res, resSize);
+            
+            // Multiplication (Precedence handling)
+            nextLen = sprintf(path + pathLen, "*%s", partStr);
+            backtrack(num, target, i + 1, (currentVal - prevOperand) + (prevOperand * val), prevOperand * val, path, pathLen + nextLen, res, resSize);
+        }
+        // Reset the path for the next iteration (backtrack step)
+        path[pathLen] = '\0';
+    }
+}
+
+char** addOperators(char* num, int target, int* returnSize) {
+    *returnSize = 0;
+    // Estimated max results based on constraints
+    char** res = malloc(1000 * sizeof(char*));
+    char path[100]; 
+    
+    backtrack(num, target, 0, 0, 0, path, 0, &res, returnSize);
+    return res;
+}
