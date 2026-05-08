@@ -1,0 +1,73 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void backtrack(char* num, int target, int index, long currentVal, long prevOperand, char* path, int pathLen, char*** res, int* resSize, int* capacity) {
+    int n = strlen(num);
+    if (index == n) {
+        if (currentVal == target) {
+            if (*resSize >= *capacity) {
+                *capacity *= 2;
+                *res = realloc(*res, (*capacity) * sizeof(char*));
+            }
+            (*res)[*resSize] = strdup(path);
+            (*resSize)++;
+        }
+        return;
+    }
+
+    long val = 0;
+    int startPathLen = pathLen;
+    
+    for (int i = index; i < n; i++) {
+        // Leading zero check
+        if (i > index && num[index] == '0') break;
+
+        // Manually build the number to avoid substring/atol overhead
+        val = val * 10 + (num[i] - '0');
+        
+        // Convert the current number segment to a string
+        char part[12];
+        int len = sprintf(part, "%ld", val);
+
+        if (index == 0) {
+            // First number
+            memcpy(path + pathLen, part, len);
+            path[pathLen + len] = '\0';
+            backtrack(num, target, i + 1, val, val, path, pathLen + len, res, resSize, capacity);
+        } else {
+            // Try +, -, *
+            // Addition
+            path[pathLen] = '+';
+            memcpy(path + pathLen + 1, part, len);
+            path[pathLen + 1 + len] = '\0';
+            backtrack(num, target, i + 1, currentVal + val, val, path, pathLen + 1 + len, res, resSize, capacity);
+
+            // Subtraction
+            path[pathLen] = '-';
+            memcpy(path + pathLen + 1, part, len);
+            path[pathLen + 1 + len] = '\0';
+            backtrack(num, target, i + 1, currentVal - val, -val, path, pathLen + 1 + len, res, resSize, capacity);
+
+            // Multiplication
+            path[pathLen] = '*';
+            memcpy(path + pathLen + 1, part, len);
+            path[pathLen + 1 + len] = '\0';
+            backtrack(num, target, i + 1, (currentVal - prevOperand) + (prevOperand * val), prevOperand * val, path, pathLen + 1 + len, res, resSize, capacity);
+        }
+        // Reset pathLen to backtrack
+        path[startPathLen] = '\0';
+    }
+}
+
+char** addOperators(char* num, int target, int* returnSize) {
+    int capacity = 5000;
+    char** res = malloc(capacity * sizeof(char*));
+    char* path = malloc(100 * sizeof(char)); // Enough for num.len * 2
+    *returnSize = 0;
+    
+    backtrack(num, target, 0, 0, 0, path, 0, &res, returnSize, &capacity);
+    
+    free(path);
+    return res;
+}
