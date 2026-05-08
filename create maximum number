@@ -1,0 +1,65 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+// Helper: Find the largest subsequence of length 'len' from 'nums'
+void getMaxSubsequence(int* nums, int numsSize, int len, int* res) {
+    int top = -1;
+    int remaining = numsSize - len;
+    for (int i = 0; i < numsSize; i++) {
+        while (top >= 0 && res[top] < nums[i] && remaining > 0) {
+            top--;
+            remaining--;
+        }
+        if (top < len - 1) res[++top] = nums[i];
+        else remaining--;
+    }
+}
+
+// Helper: Compare two arrays starting from index i and j
+bool isGreater(int* s1, int n1, int i, int* s2, int n2, int j) {
+    while (i < n1 && j < n2 && s1[i] == s2[j]) {
+        i++;
+        j++;
+    }
+    return j == n2 || (i < n1 && s1[i] > s2[j]);
+}
+
+// Helper: Merge two subsequences to form the largest number
+int* merge(int* s1, int n1, int* s2, int n2, int k) {
+    int* res = (int*)malloc(k * sizeof(int));
+    int i = 0, j = 0, r = 0;
+    while (r < k) {
+        if (isGreater(s1, n1, i, s2, n2, j)) res[r++] = s1[i++];
+        else res[r++] = s2[j++];
+    }
+    return res;
+}
+
+int* maxNumber(int* nums1, int nums1Size, int* nums2, int nums2Size, int k, int* returnSize) {
+    *returnSize = k;
+    int* maxRes = (int*)calloc(k, sizeof(int));
+    
+    int start = (k - nums2Size > 0) ? k - nums2Size : 0;
+    int end = (k < nums1Size) ? k : nums1Size;
+
+    for (int i = start; i <= end; i++) {
+        int* s1 = (int*)malloc(i * sizeof(int));
+        int* s2 = (int*)malloc((k - i) * sizeof(int));
+        
+        getMaxSubsequence(nums1, nums1Size, i, s1);
+        getMaxSubsequence(nums2, nums2Size, k - i, s2);
+        
+        int* currentMerge = merge(s1, i, s2, k - i, k);
+        
+        if (isGreater(currentMerge, k, 0, maxRes, k, 0)) {
+            memcpy(maxRes, currentMerge, k * sizeof(int));
+        }
+        
+        free(s1);
+        free(s2);
+        free(currentMerge);
+    }
+    
+    return maxRes;
+}
